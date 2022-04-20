@@ -1,9 +1,5 @@
-
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Accord.Math;
-using Accord.Math.Optimization;
 using JetBrains.Annotations;
 
 namespace JaroWinklerRecordSearch.MyMath
@@ -55,26 +51,22 @@ namespace JaroWinklerRecordSearch.MyMath
 	/// <code source="Unit Tests\Accord.Tests.Math\Optimization\MunkresTest.cs" region="doc_example" />
 	/// </example>
 	/// 
-	/// <seealso cref="IOptimizationMethod" />
-	///
 	[PublicAPI]
 	public class Munkres2
 	{
-        private double[][] _costMatrix = null!;
-		private double[][] _validCost = null!;
-		private bool[][] _stars = null!;
-		private bool[] _rowCover = null!;
-		private bool[] _colCover = null!;
-		internal int[] StarZ = null!;
-		internal int[] PrimeZ = null!;
-		private bool[][] _validMap = null!;
+
+        private readonly double[,] _costMatrix;
+        private readonly double[,] _validCost;
+		private readonly bool[,] _stars;
+		private readonly bool[] _rowCover;
+		private readonly bool[] _colCover;
+		internal readonly int[] StarZ;
+		internal readonly int[] PrimeZ;
 
         private int _pathRow0;
 		private int _pathCol0;
 
-		private int _nRows;
-		private int _nCols;
-		private int _n;
+		private readonly int _n;
 
 		/// <summary>
 		///   Gets the minimum values across the cost matrix's rows.
@@ -89,18 +81,6 @@ namespace JaroWinklerRecordSearch.MyMath
 		public double[] MinCol { get; private set; } = null!;
 
         /// <summary>
-		///   Gets a boolean mask indicating which rows contain at least one valid element.
-		/// </summary>
-		/// 
-		public bool[] ValidRow { get; private set; } = null!;
-
-        /// <summary>
-		///   Gets a boolean mask indicating which columns contain at least one valid element.
-		/// </summary>
-		/// 
-		public bool[] ValidCol { get; private set; } = null!;
-
-        /// <summary>
 		///   Gets or sets the tolerance value used when performing cost 
 		///   comparisons. Default is 1e-10. If the algorithm takes too
 		///   much time to finish, try decreasing this value.
@@ -109,14 +89,14 @@ namespace JaroWinklerRecordSearch.MyMath
 		public double Tolerance { get; set; } = 1e-10;
 
         /// <summary>
-		///   Gets or sets the cost matrix for this assignment algorithm. This is
-		///   a (W x T) matrix where N corresponds to the <see cref="NumberOfWorkers"/>
-		///   and T to the <see cref="NumberOfTasks"/>.
-		/// </summary>
-		/// 
-		/// <value>The cost matrix.</value>
-		/// 
-		public double[][] CostMatrix { get; private set; } = null!;
+        ///   Gets or sets the cost matrix for this assignment algorithm. This is
+        ///   a (W x T) matrix where N corresponds to the <see cref="NumberOfWorkers"/>
+        ///   and T to the <see cref="NumberOfTasks"/>.
+        /// </summary>
+        /// 
+        /// <value>The cost matrix.</value>
+        /// 
+        public double[,] CostMatrix => _costMatrix;
 
         /// <summary>
 		/// Gets or sets the number of variables in this optimization problem
@@ -138,7 +118,7 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// 
 		/// <value>The number of tasks in the assignment problem.</value>
 		/// 
-		public int NumberOfTasks => CostMatrix.Columns();
+		public int NumberOfTasks => _costMatrix.Columns();
 
         /// <summary>
 		///   Gets or sets the number of workers in the assignment algorithm.
@@ -148,7 +128,7 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// 
 		/// <value>The number of workers.</value>
 		/// 
-		public int NumberOfWorkers => CostMatrix.Rows();
+		public int NumberOfWorkers => _costMatrix.Rows();
 
         /// <summary>
 		/// Gets the current solution found, the values of
@@ -157,7 +137,7 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// 
 		/// <value>The solution.</value>
 		/// 
-		public double[] Solution { get; set; } = null!;
+		public double[] Solution { get; set; }
 
         /// <summary>
 		///   Gets the output of the function at the current <see cref="Solution" />.
@@ -167,19 +147,6 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// 
 		public double Value { get; protected set; }
 
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Munkres"/> class.
-		/// </summary>
-		/// 
-		/// <param name="numberOfJobs">The number of jobs (tasks) that can be assigned.</param>
-		/// <param name="numberOfWorkers">The number of workers that can receive an assignment.</param>
-		/// 
-		public Munkres2(int numberOfJobs, int numberOfWorkers)
-		{
-			Init(Jagged.Zeros(numberOfWorkers, numberOfJobs));
-		}
-
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Munkres"/> class.
 		/// </summary>
@@ -187,18 +154,22 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// <param name="costMatrix">The cost matrix where each row represents
 		///   a worker, each column represents a task, and each individual element
 		///   represents how much it costs for a particular worker to receive (be
-		///   assigned) a particular task.</param>
+		///   assigned) a particular task.
+		///   Preprocesses the cost matrix to check for infinities and invalid values.</param>
 		/// 
-		public Munkres2(double[][] costMatrix)
-		{
-			Init(costMatrix);
-		}
-
-		private void Init(double[][] costMatrix)
-		{
-			CostMatrix = costMatrix;
-			Solution = new double[NumberOfWorkers];
-		}
+		public Munkres2(double[,] costMatrix)
+        {
+            _costMatrix = costMatrix;
+            Solution = new double[NumberOfWorkers];
+            _n = Math.Max(_costMatrix.Rows(), _costMatrix.Columns());
+            var max = _costMatrix.MaxAbs();
+            _validCost = _costMatrix.ToSquare(_n, 10.0 * max);
+            _rowCover = new bool[_n];
+            _colCover = new bool[_n];
+            _stars = new bool[_n,_n];
+            StarZ = Vector.Create(_n, -1);
+            PrimeZ = Vector.Create(_n, -1);
+        }
 
 		/// <summary>
 		///   Finds the minimum value of a function. The solution vector
@@ -209,9 +180,10 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// In this case, the found value will also be available at the <see cref="Value" />
 		/// property.</returns>
 		/// 
-		public bool Minimize()
-		{
-			return Run(CostMatrix.Copy());
+		public static bool Minimize(double[,] costMatrix)
+        {
+            var munkres = new Munkres2(costMatrix.Copy());
+			return munkres.Run();
 		}
 
 
@@ -224,22 +196,19 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// In this case, the found value will also be available at the <see cref="Value" />
 		/// property.</returns>
 		/// 
-		public bool Maximize()
+		public bool Maximize(double[,] costMatrix)
 		{
-			return Run(CostMatrix.Multiply(-1));
+            var munkres = new Munkres2(costMatrix.Multiply(-1));
+            return munkres.Run();
 		}
 
-		private bool Run(double[][] m)
+		public bool Run()
 		{
-			_costMatrix = m;
-
-			var step = 0;
-
-			while (step >= 0)
+			var step = 1;
+			while (step > 0)
 			{
 				step = RunStep(step);
 			}
-
 			return true;
 		}
 
@@ -248,7 +217,6 @@ namespace JaroWinklerRecordSearch.MyMath
         {
             return step switch
             {
-                0 => Step0(),
                 1 => Step1(),
                 2 => Step2(),
                 3 => Step3(),
@@ -261,62 +229,7 @@ namespace JaroWinklerRecordSearch.MyMath
         }
 
 
-		/// <summary>
-		///  Preprocesses the cost matrix to remove infinities and invalid values.
-		/// </summary>
-		/// 
-		/// <returns>Go to step 1.</returns>
-		/// 
-		private int Step0()
-		{
-			ValidRow = new bool[NumberOfWorkers];
-			ValidCol = new bool[NumberOfTasks];
-			_validMap = Jagged.Create<bool>(NumberOfWorkers, NumberOfTasks);
-
-
-			double sum = 0;
-			var max = double.NegativeInfinity;
-
-			for (var i = 0; i < ValidRow.Length; i++)
-			{
-				for (var j = 0; j < ValidCol.Length; j++)
-				{
-					var v = Math.Abs(_costMatrix[i][j]);
-
-					if (!double.IsInfinity(v) && !double.IsNaN(v))
-					{
-						_validMap[i][j] = ValidRow[i] = ValidCol[j] = true;
-
-						sum += v;
-						if (v > max)
-							max = v;
-					}
-				}
-			}
-
-			var bigM = Math.Pow(10, Math.Ceiling(Math.Log10(sum)) + 1);
-			for (var i = 0; i < _costMatrix.Length; i++)
-				for (var j = 0; j < _costMatrix[i].Length; j++)
-					if (!_validMap[i][j])
-						_costMatrix[i][j] = Math.Sign(_costMatrix[i][j]) * bigM;
-
-			_nRows = Enumerable.Count(ValidRow, x => x);
-			_nCols = Enumerable.Count(ValidCol, x => x);
-			_n = Math.Max(_nRows, _nCols);
-
-			if (_n == 0)
-				throw new InvalidOperationException("There are no valid values in the cost matrix.");
-
-			_validCost = _costMatrix.Get(ValidRow, ValidCol, false, Jagged.Create(_n, _n, 10.0 * max));
-
-			_rowCover = new bool[_n];
-			_colCover = new bool[_n];
-			_stars = Jagged.Create(_n, _n, false);
-
-			return 1;
-		}
-
-		/// <summary>
+        /// <summary>
 		///  For each row of the cost matrix, find the smallest element
 		///  and subtract it from every element in its row.
 		/// </summary>
@@ -341,16 +254,13 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// 
 		private int Step2()
 		{
-            _stars = FindZeros(_validCost, MinRow, MinCol, out _);
+            FindZeros(_validCost, MinRow, MinCol, _stars, out _, Tolerance);
 
-			StarZ = Vector.Create(_n, -1);
-			PrimeZ = Vector.Create(_n, -1);
-
-			for (var j = 0; j < _stars[0].Length; j++)
+			for (var j = 0; j < _stars.GetLength(1); j++)
 			{
-				for (var i = 0; i < _stars.Length; i++)
+				for (var i = 0; i < _stars.GetLength(0); i++)
 				{
-					if (_stars[i][j])
+					if (_stars[i,j])
 					{
 						StarZ[i] = j;
 						_stars.SetColumn(j, false);
@@ -362,14 +272,14 @@ namespace JaroWinklerRecordSearch.MyMath
 			return 3;
 		}
 
-		internal static bool[][] FindZeros(double[][] mC, double[] minRow, double[] minCol, out double[][] min)
+		internal static bool[,] FindZeros(double[,] mC, double[] minRow, double[] minCol, bool[,] zeros, out double[,] min, double atol = 1e-10)
 		{
-			min = Jagged.CreateAs(mC);
+			min = mC.CreateAs();
 			for (var r = 0; r < minRow.Length; r++)
 				for (var c = 0; c < minCol.Length; c++)
-					min[r][c] = minRow[r] + minCol[c];
+					min[r,c] = minRow[r] + minCol[c];
 
-			return Elementwise.Equals(mC, min);
+			return Elementwise.Equals(mC, min, zeros, atol);
 		}
 
 		/// <summary>
@@ -390,13 +300,9 @@ namespace JaroWinklerRecordSearch.MyMath
             foreach (var j in StarZ)
             {
                 if (j >= 0)
-                {
                     _colCover[j] = true;
-                }
                 else
-                {
                     done = false;
-                }
             }
 
 			return done ? 7 : 4;
@@ -433,25 +339,25 @@ namespace JaroWinklerRecordSearch.MyMath
 				zeros.RemoveAll(x => x.Item1 == _pathRow0);
 
 				// Update
-				for (var r = 0; r < _rowCover.Length; r++)
+				for (var r = 0; r < Math.Min(_costMatrix.GetLength(0), _rowCover.Length); r++)
 				{
 					if (_rowCover[r])
 						continue;
 
-					var a = _costMatrix[r][stz];
+					var a = _costMatrix[r,stz];
 					var b = MinRow[r] + MinCol[stz];
 
-					if (a.IsEqual(b, rtol: Tolerance))
-						zeros.Add(Tuple.Create(r, stz));
+					if (Math.Abs(a - b) < Tolerance)
+						zeros.Add((r, stz));
 				}
 			}
 
 			return 6;
 		}
 
-		private List<Tuple<int, int>> FindAllZeros()
+		private List<(int, int)> FindAllZeros()
 		{
-			var zeros = new List<Tuple<int, int>>();
+			var zeros = new List<(int, int)>();
 			for (var c = 0; c < _colCover.Length; c++)
 			{
 				if (_colCover[c])
@@ -462,11 +368,11 @@ namespace JaroWinklerRecordSearch.MyMath
 					if (_rowCover[r])
 						continue;
 
-					var a = _validCost[r][c];
+					var a = _validCost[r,c];
 					var b = MinCol[c] + MinRow[r];
 
-					if (a.IsEqual(b, rtol: Tolerance))
-						zeros.Add(Tuple.Create(r, c));
+					if (Math.Abs(a - b) < Tolerance)
+						zeros.Add((r, c));
 				}
 			}
 
@@ -539,7 +445,7 @@ namespace JaroWinklerRecordSearch.MyMath
 					if (_rowCover[r])
 						continue;
 
-					var v = _validCost[r][c] - (MinRow[r] + MinCol[c]);
+					var v = _validCost[r,c] - (MinRow[r] + MinCol[c]);
 
 					if (v < minval)
 						minval = v;
@@ -558,20 +464,19 @@ namespace JaroWinklerRecordSearch.MyMath
 			//                     (http://csclab.murraystate.edu/~bob.pilgrim/445/munkres.html)
 			double value = 0;
 
-			for (var i = 0; i < _nRows; i++)
+			for (var i = 0; i < _costMatrix.Rows(); i++)
 			{
 				Solution[i] = double.NaN;
 				var j = StarZ[i];
 
-				if (j >= 0 && j < _nCols && _validMap[i][j])
+				if (j >= 0 && j < _costMatrix.Columns())
 				{
 					Solution[i] = j;
-					value += _validCost[i][j];
+					value += _costMatrix[i,j];
 				}
 			}
-
 			Value = value;
 			return -1;
 		}
-	}
+    }
 }

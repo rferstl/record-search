@@ -6,96 +6,64 @@ namespace JaroWinklerRecordSearch.MyMath
 {
     public static class Matrix
     {
-        public static int Columns<T>(this T[][] matrix)
+        public static int Columns<T>(this T[,] matrix)
         {
-            if (matrix.Length == 0)
-            {
-                return 0;
-            }
-            return matrix[0].Length;
+            return matrix.GetLength(1);
         }
 
-        public static int Rows<T>(this T[][] matrix)
+        public static int Rows<T>(this T[,] matrix)
         {
-            return matrix.Length;
+            return matrix.GetLength(0);
         }
 
-        public static double[][] Multiply(this double[][] a, int b)
+        public static double[,] Multiply(this double[,] a, int b)
         {
-            return a.Multiply(b, Jagged.CreateAs<double, double>(a));
-        }
+            var rows = a.GetLength(0);
+            var cols = a.GetLength(1);
+            var result = new double[rows, cols];
 
-        public static double[][] Multiply(this double[][] a, int b, double[][] result)
-        {
-            for (var i = 0; i < a.Length; i++)
-            {
-                for (var j = 0; j < a[i].Length; j++)
-                {
-                    result[i][j] = a[i][j] * (double)b;
-                }
-            }
+            for (var i = 0; i < rows; i++)
+            for (var j = 0; j < cols; j++)
+                result[i, j] = a[i, j] * b;
             return result;
         }
 
-        public static double[][] Subtract(this double[][] a, double[] b, VectorType dimension)
+        public static double[,] Subtract(this double[,] a, double[] b, VectorType dimension)
         {
-            return a.Subtract(b, dimension, Jagged.CreateAs<double, double>(a));
+            return a.Subtract(b, dimension, CreateAs(a));
         }
 		
-        public static double[][] Subtract(this double[][] a, double[] b, VectorType dimension, double[][] result)
+        public static double[,] Subtract(this double[,] a, double[] b, VectorType dimension, double[,] result)
         {
             if (dimension == VectorType.RowVector)
             {
-                for (var i = 0; i < a.Length; i++)
+                for (var i = 0; i < a.GetLength(0); i++)
                 {
-                    for (var j = 0; j < a[i].Length; j++)
+                    for (var j = 0; j < a.GetLength(1); j++)
                     {
-                        result[i][j] = a[i][j] - b[j];
+                        result[i,j] = a[i,j] - b[j];
                     }
                 }
             }
             else
             {
-                for (var k = 0; k < a.Length; k++)
+                for (var k = 0; k < a.GetLength(0); k++)
                 {
-                    for (var l = 0; l < a[k].Length; l++)
+                    for (var l = 0; l < a.GetLength(1); l++)
                     {
-                        result[k][l] = a[k][l] - b[k];
+                        result[k,l] = a[k,l] - b[k];
                     }
                 }
             }
             return result;
         }
 
-        public static T[][] Copy<T>(this T[][] a)
+        public static T[,] Copy<T>(this T[,] a)
         {
-            var array = new T[a.Length][];
-            for (var i = 0; i < a.Length; i++)
-            {
-                array[i] = (T[])a[i].Clone();
-            }
-            return array;
+            return (T[,])a.Clone();
         }
 
-        public static T[][] Get<T>(this T[][] source, bool[] rowMask, bool[] columnMask, bool reuseMemory, T[][] result)
-        {
-            return source.get(result, rowMask.Find(x => x), columnMask.Find(x => x), reuseMemory);
-        }
-
-        public static int[] Find<T>(this T[] data, Func<T, bool> func)
-        {
-            var list = new List<int>();
-            for (var i = 0; i < data.Length; i++)
-            {
-                if (func(data[i]))
-                {
-                    list.Add(i);
-                }
-            }
-            return list.ToArray();
-        }
-
-        public static T[] Min<T>(this T[][] matrix, int dimension) where T : IComparable<T>
+        public static T[] Min<T>(this T[,] matrix, int dimension) where T : IComparable<T>
         {
             var length = GetLength(matrix, dimension);
             var result = new T[length];
@@ -103,18 +71,18 @@ namespace JaroWinklerRecordSearch.MyMath
             return matrix.Min(dimension, indices, result);
         }
 
-        public static T[] Min<T>(this T[][] matrix, int dimension, int[] indices, T[] result) where T : IComparable<T>
+        public static T[] Min<T>(this T[,] matrix, int dimension, int[] indices, T[] result) where T : IComparable<T>
         {
             if (dimension == 1)
             {
                 matrix.GetColumn(0, result);
-                for (var i = 0; i < matrix.Length; i++)
+                for (var i = 0; i < matrix.GetLength(0); i++)
                 {
-                    for (var j = 0; j < matrix[i].Length; j++)
+                    for (var j = 0; j < matrix.GetLength(1); j++)
                     {
-                        if (matrix[i][j].CompareTo(result[i]) < 0)
+                        if (matrix[i,j].CompareTo(result[i]) < 0)
                         {
-                            result[i] = matrix[i][j];
+                            result[i] = matrix[i,j];
                             indices[i] = j;
                         }
                     }
@@ -125,11 +93,11 @@ namespace JaroWinklerRecordSearch.MyMath
                 matrix.GetRow(0, result);
                 for (var k = 0; k < result.Length; k++)
                 {
-                    for (var l = 0; l < matrix.Length; l++)
+                    for (var l = 0; l < matrix.GetLength(0); l++)
                     {
-                        if (matrix[l][k].CompareTo(result[k]) < 0)
+                        if (matrix[l,k].CompareTo(result[k]) < 0)
                         {
-                            result[k] = matrix[l][k];
+                            result[k] = matrix[l,k];
                             indices[k] = l;
                         }
                     }
@@ -137,48 +105,35 @@ namespace JaroWinklerRecordSearch.MyMath
             }
             return result;
         }
-        public static T[] GetColumn<T>(this T[][] m, int index, T[] result)
+        public static T[] GetColumn<T>(this T[,] m, int index, T[] result)
         {
-            if (result == null)
-            {
-                result = new T[m.Length];
-            }
-            index = Matrix.index(index, m.Columns());
+            index = Index(index, m.Columns());
             for (var i = 0; i < result.Length; i++)
-            {
-                result[i] = m[i][index];
-            }
+                result[i] = m[i,index];
             return result;
         }
-        public static T[] GetRow<T>(this T[][] m, int index, T[] result)
+        public static T[] GetRow<T>(this T[,] m, int index, T[] result)
         {
-            index = Matrix.index(index, m.Rows());
-            if (result == null)
-            {
-                return (T[])m[index].Clone();
-            }
-            m[index].CopyTo(result, 0);
+            index = Index(index, m.Rows());
+            for (var i = 0; i < result.Length; i++)
+                result[i] = m[index, i];
             return result;
         }
-        public static T[][] SetColumn<T>(this T[][] m, int index, T value)
+        public static T[,] SetColumn<T>(this T[,] m, int index, T value)
         {
-            index = Matrix.index(index, m.Columns());
-            for (var i = 0; i < m.Length; i++)
-            {
-                m[i][index] = value;
-            }
+            index = Index(index, m.Columns());
+            for (var i = 0; i < m.GetLength(0); i++)
+                m[i,index] = value;
             return m;
         }
-        public static T[][] SetRow<T>(this T[][] m, int index, T value)
+        public static T[,] SetRow<T>(this T[,] m, int index, T value)
         {
-            index = Matrix.index(index, m.Rows());
-            for (var i = 0; i < m[index].Length; i++)
-            {
-                m[index][i] = value;
-            }
+            index = Index(index, m.Rows());
+            for (var i = 0; i < m.GetLength(1); i++)
+                m[index,i] = value;
             return m;
         }
-        private static int index(int end, int length)
+        private static int Index(int end, int length)
         {
             if (end < 0)
             {
@@ -186,186 +141,97 @@ namespace JaroWinklerRecordSearch.MyMath
             }
             return end;
         }
-        internal static int GetLength<T>(T[][] values, int dimension)
+        internal static int GetLength<T>(T[,] values, int dimension)
         {
-            if (dimension == 1)
-            {
-                return values.Length;
-            }
-            return values[0].Length;
+            return values.GetLength(dimension == 1 ? 0 : 1);
         }
         public static void Clear(this Array array)
         {
             Array.Clear(array, 0, array.Length);
         }
-        public static bool IsEqual(this double a, double b, double atol = 0.0, double rtol = 0.0)
+        public static bool IsEqual(this double a, double b, double atol = 0.0)
         {
-            if (rtol > 0.0)
-            {
-                if (a == b)
-                {
-                    return true;
-                }
-                if (double.IsNaN(a) && double.IsNaN(b))
-                {
-                    return true;
-                }
-                if (double.IsNaN(a) ^ double.IsNaN(b))
-                {
-                    return false;
-                }
-                if (double.IsPositiveInfinity(a) ^ double.IsPositiveInfinity(b))
-                {
-                    return false;
-                }
-                if (double.IsNegativeInfinity(a) ^ double.IsNegativeInfinity(b))
-                {
-                    return false;
-                }
-                var num = System.Math.Abs(a - b);
-                if (a == 0.0)
-                {
-                    if (num <= rtol)
-                    {
-                        return true;
-                    }
-                }
-                else if (b == 0.0 && num <= rtol)
-                {
-                    return true;
-                }
-                if (num <= System.Math.Abs(a) * rtol)
-                {
-                    return true;
-                }
-                return false;
-            }
-            if (atol > 0.0)
-            {
-                if (a == b)
-                {
-                    return true;
-                }
-                if (double.IsNaN(a) && double.IsNaN(b))
-                {
-                    return true;
-                }
-                if (double.IsNaN(a) ^ double.IsNaN(b))
-                {
-                    return false;
-                }
-                if (double.IsPositiveInfinity(a) ^ double.IsPositiveInfinity(b))
-                {
-                    return false;
-                }
-                if (double.IsNegativeInfinity(a) ^ double.IsNegativeInfinity(b))
-                {
-                    return false;
-                }
-                if (System.Math.Abs(a - b) <= atol)
-                {
-                    return true;
-                }
-                return false;
-            }
-            if (double.IsNaN(a) && double.IsNaN(b))
-            {
-                return true;
-            }
-            if (double.IsNaN(a) ^ double.IsNaN(b))
-            {
-                return false;
-            }
-            if (double.IsPositiveInfinity(a) ^ double.IsPositiveInfinity(b))
-            {
-                return false;
-            }
-            if (double.IsNegativeInfinity(a) ^ double.IsNegativeInfinity(b))
-            {
-                return false;
-            }
-            if (a != b)
-            {
-                return false;
-            }
-            return true;
+            return Math.Abs(a - b) <= atol;
         }
-        private static T[][] get<T>(this T[][] source, T[][] destination, IReadOnlyList<int> rowIndexes, IReadOnlyList<int> columnIndexes, bool reuseMemory)
+
+        public static T[,] ToMatrix<T>(this T[][] array, bool transpose = false)
         {
-            if (source == null)
+            var nrow = array.Length;
+            if (nrow == 0)
+                return new T[0, nrow];
+            var ncol = array[0].Length;
+            T[,] matrix;
+            if (transpose)
             {
-                throw new ArgumentNullException("source");
-            }
-            if (source.Length == 0)
-            {
-                return Array.Empty<T[]>();
-            }
-            var num = source.Length;
-            var num2 = source[0].Length;
-            var num3 = num;
-            var num4 = num2;
-            num3 = rowIndexes.Count;
-            if (rowIndexes.Any(t => t < 0 || t >= num))
-                throw new ArgumentException("Argument out of range.");
-            num4 = columnIndexes.Count;
-            if (columnIndexes.Any(t => t < 0 || t >= num2))
-                throw new ArgumentException("Argument out of range.");
-            if (destination != null)
-            {
-                if (destination.Length < num3)
+                matrix = new T[ncol, nrow];
+                for (var r = 0; r < nrow; ++r)
                 {
-                    throw new ArgumentException("destination The destination matrix must be big enough to accommodate the results.");
+                    for (var c = 0; c < ncol; ++c)
+                        matrix[c, r] = array[r][c];
                 }
             }
             else
             {
-                destination = new T[num3][];
-                if (columnIndexes != null && !reuseMemory)
+                matrix = new T[nrow, ncol];
+                for (var r = 0; r < nrow; ++r)
                 {
-                    for (var k = 0; k < destination.Length; k++)
-                    {
-                        destination[k] = new T[num4];
-                    }
+                    for (var c = 0; c < ncol; ++c)
+                        matrix[r, c] = array[r][c];
                 }
             }
-            if (columnIndexes == null)
-            {
-                if (reuseMemory)
-                {
-                    for (var l = 0; l < rowIndexes.Count; l++)
-                    {
-                        destination[l] = source[rowIndexes[l]];
-                    }
-                }
-                else
-                {
-                    for (var m = 0; m < rowIndexes.Count; m++)
-                    {
-                        destination[m] = (T[])source[rowIndexes[m]].Clone();
-                    }
-                }
-            }
-            else if (rowIndexes == null)
-            {
-                for (var n = 0; n < source.Length; n++)
-                {
-                    for (var num5 = 0; num5 < columnIndexes.Count; num5++)
-                    {
-                        destination[n][num5] = source[n][columnIndexes[num5]];
-                    }
-                }
-            }
-            else
-            {
-                for (var num6 = 0; num6 < rowIndexes.Count; num6++)
-                {
-                    for (var num7 = 0; num7 < columnIndexes.Count; num7++)
-                    {
-                        destination[num6][num7] = source[rowIndexes[num6]][columnIndexes[num7]];
-                    }
-                }
-            }
-            return destination;
+            return matrix;
         }
+
+        public static T[,] Create<T>(int rows, int columns)
+        {
+            var matrix = new T[rows, columns];
+            return matrix;
+        }
+
+        public static T[,] Create<T>(int rows, int columns, T value)
+        {
+            var matrix = new T[rows, columns];
+            for (var i = 0; i < rows; i++)
+            for (var j = 0; j < columns; j++)
+                matrix[i, j] = value;
+            return matrix;
+        }
+
+        public static T[,] CreateAs<T>(this T[,] matrix)
+        {
+            return new T[matrix.GetLength(0), matrix.GetLength(1)];
+        }
+		
+        public static TOutput[,] CreateAs<TInput, TOutput>(this TInput[,] matrix)
+        {
+            return new TOutput[matrix.GetLength(0), matrix.GetLength(1)];
+        }
+
+        public static double[,] ToSquare(this double[,] m, int n, double fill)
+        {
+            var (nRows, nCols) = (m.GetLength(0), m.GetLength(1));
+            var mSquare = new double[n, n];
+            for (var i = 0; i < n; i++)
+            for (var j = 0; j < n; j++)
+                mSquare[i, j] = i < nRows && j < nCols ?  m[i, j] : fill;
+            return mSquare;
+        }
+
+        public static double MaxAbs(this double[,] m)
+        {
+            var (nRows, nCols) = (m.GetLength(0), m.GetLength(1));
+            var max = double.MinValue;
+            for (var i = 0; i < nRows; i++)
+            for (var j = 0; j < nCols; j++)
+            {
+                var v = Math.Abs(m[i, j]);
+                if (double.IsInfinity(v) || double.IsNaN(v))
+                    throw new ArgumentOutOfRangeException();
+                if (v > max)
+                    max = v;
+            }
+            return max;
+        }
+
     }
 }

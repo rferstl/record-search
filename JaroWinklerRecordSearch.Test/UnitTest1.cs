@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Accord.Math.Optimization;
 using JaroWinklerRecordSearch.Helper;
-using JaroWinklerRecordSearch.MyMath;
 using Munkres;
 using Xunit;
 using Xunit.Abstractions;
