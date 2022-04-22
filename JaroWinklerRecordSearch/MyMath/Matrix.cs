@@ -16,7 +16,7 @@ namespace JaroWinklerRecordSearch.MyMath
             return matrix.GetLength(0);
         }
 
-        public static double[,] Multiply(this double[,] a, int b)
+        public static double[,] Negate(this double[,] a)
         {
             var rows = a.GetLength(0);
             var cols = a.GetLength(1);
@@ -24,7 +24,7 @@ namespace JaroWinklerRecordSearch.MyMath
 
             for (var i = 0; i < rows; i++)
             for (var j = 0; j < cols; j++)
-                result[i, j] = a[i, j] * b;
+                result[i, j] = - a[i, j];
             return result;
         }
 

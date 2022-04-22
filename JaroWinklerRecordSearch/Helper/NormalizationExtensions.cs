@@ -77,9 +77,9 @@ namespace JaroWinklerRecordSearch.Helper
             return ns;
         }
 
-        public static SearchTerm[] SearchTermSplit(this string text)
+        public static IEnumerable<SearchTerm> SearchTermSplit(this string text)
         {
-            var nsts = text.MySplit().Select((t,i) => new SearchTerm(i, t, t.MyNormalize())).ToArray();
+            var nsts = text.MySplit().Select((t,i) => new SearchTerm(i, t, t.MyNormalize()));
             return nsts;
         }
     }

@@ -66,11 +66,11 @@
     <Compile Include="Helper\EnumerableExtensions.cs" />
     <Compile Include="Helper\JsonlExtensions.cs" />
     <Compile Include="Helper\NormalizationExtensions.cs" />
+    <Compile Include="Model\DocFieldPosTidStIdScore.cs" />
+    <Compile Include="Model\DocFieldPosTidStIdScores.cs" />
     <Compile Include="Model\DocTidFieldPos.cs" />
     <Compile Include="Model\FieldPosTidStIdScore.cs" />
     <Compile Include="Model\SearchTerm.cs" />
-    <Compile Include="Model\DocStTidScore.cs" />
-    <Compile Include="Model\DocStTidScores.cs" />
     <Compile Include="Model\FieldPos.cs" />
     <Compile Include="Model\Segment.cs" />
     <Compile Include="Helper\InvertedIndexExtensions.cs" />
@@ -79,13 +79,11 @@
     <Compile Include="Model\FieldEnum.cs" />
     <Compile Include="Model\IndexDoc.cs" />
     <Compile Include="Model\ScdPerson.cs" />
-    <Compile Include="Model\SearchResult.cs" />
     <Compile Include="Model\Term.cs" />
     <Compile Include="Model\TermIndex.cs" />
     <Compile Include="Model\TidFieldPos.cs" />
-    <Compile Include="Model\TermScore.cs" />
     <Compile Include="Model\TermTidScoreU.cs" />
-    <Compile Include="Model\StTidScore.cs" />
+    <Compile Include="Model\StIdTidScore.cs" />
     <Compile Include="Munkres.cs" />
     <Compile Include="MyMath\Elementwise.cs" />
     <Compile Include="MyMath\Matrix.cs" />
@@ -96,6 +94,7 @@
     <Compile Include="OrgCodeSearchIndex.cs" />
     <Compile Include="RecordSearch.cs" />
     <Compile Include="SearchIndex.cs" />
+    <Compile Include="SearchResult.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

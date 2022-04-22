@@ -1,31 +1,35 @@
 ﻿using System.CodeDom.Compiler;
+using System.Linq;
 using System.Runtime.Remoting.Channels;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace JaroWinklerRecordSearch.Test
 {
-    public class RecordSearchPerfTests
+    public class RecordSearchTests  : IClassFixture<RecordSearchFixture>
     {
         private readonly ITestOutputHelper _log;
         private readonly RecordSearch _recordSearch;
-        public RecordSearchPerfTests(ITestOutputHelper log)
+        public RecordSearchTests(RecordSearchFixture fixture, ITestOutputHelper log)
         {
             _log = log;
-            _recordSearch = new RecordSearch();
+            _recordSearch = fixture.RecordSearch;
         }
 
-
         [Fact]
-        public void TestRecordSearch1()
+        public void TestPerfRecordSearch1()
         {
             var testSearchQueries = new []{ "fer fer", "fer rol", "rin chr", "fer rol fer", "chr chr chr"};
             //var testSearchQueries = new []{ "fer rol"};
             foreach(var sq in testSearchQueries){
-                var (resultCount, topResults) = _recordSearch.Search(sq);
-                _log.WriteLine($"search '{sq}' -> {resultCount} found");
+                var topResults = _recordSearch.Search(sq).Take(10);
+                _log.WriteLine($"search '{sq}'");
                 foreach (var sr in topResults)
-                    _log.WriteLine($"{sr.Text} {sr.Score}");
+                {
+                    var doc = _recordSearch.ScdNameDict[sr.DocId];
+                    var text = $"{doc.LastName}, {doc.FirstName} ({doc.Gid} {sr.DocId}) {doc.OrgCode}";
+                    _log.WriteLine($"{text} {sr.Score}");
+                }
                 _log.WriteLine("");
             }
         }

@@ -54,31 +54,15 @@ namespace JaroWinklerRecordSearch
                 array[g.Key] = g.Select(kv => kv.Value).ToArray();
             return array;
         }
-        public IList<StTidScore> SearchTermScore(SearchTerm searchTerm)
+        public IList<StIdTidScore> SearchTermScore(SearchTerm searchTerm)
         {
             var (stId, _, stNorm) = searchTerm;
             if (stNorm.Length == 0)
-                return Array.Empty<StTidScore>();
+                return Array.Empty<StIdTidScore>();
 
             var term = TermDict.GetValueOrDefault(stNorm, Term.None);
-            return new []{new StTidScore(stId, term.Id, 0.5) };
+            return new []{new StIdTidScore(stId, term.Id, 0.5) };
         }
 
-        public IList<DocStTidScore> Find(IList<StTidScore> tids)
-        {
-            return tids.SelectMany(ts => Index[ts.Tid]
-                .Select(d => new DocStTidScore(d, ts)))
-                .ToArray();
-        }
-
-        public IList<DocStTidScores> Find2(IList<StTidScore> tidScores)
-        {
-            static DocStTidScores Aggregate(int docId, IEnumerable<DocStTidScore> xs) =>
-                new(docId, xs.Select(ts => ts.StTidScore).ToArray());
-
-            var docLists = tidScores.Select(ts => Index[ts.Tid].Select(d => new DocStTidScore(d, ts)));
-            var merged = docLists.MergeBy(x => x.DocId, Aggregate).ToArray();
-            return merged;
-        }
     }
 }

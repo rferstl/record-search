@@ -59,7 +59,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MunkresTest.cs" />
-    <Compile Include="RecordSearchPerfTests.cs" />
+    <Compile Include="RecordSearchFixture.cs" />
+    <Compile Include="RecordSearchTests.cs" />
     <Compile Include="UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

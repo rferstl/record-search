@@ -3,9 +3,9 @@ using JetBrains.Annotations;
 namespace JaroWinklerRecordSearch.Model
 {
     [PublicAPI]
-    public struct StTidScore
+    public struct StIdTidScore
     {
-        public StTidScore(int stId, int tid, double score)
+        public StIdTidScore(int stId, int tid, double score)
         {
             StId = stId;
             Tid = tid;

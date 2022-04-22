@@ -180,10 +180,12 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// In this case, the found value will also be available at the <see cref="Value" />
 		/// property.</returns>
 		/// 
-		public static bool Minimize(double[,] costMatrix)
+		public static Munkres2 Minimize(double[,] costMatrix)
         {
             var munkres = new Munkres2(costMatrix.Copy());
-			return munkres.Run();
+            if (!munkres.Run())
+                throw new InvalidOperationException();
+			return munkres;
 		}
 
 
@@ -196,10 +198,13 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// In this case, the found value will also be available at the <see cref="Value" />
 		/// property.</returns>
 		/// 
-		public bool Maximize(double[,] costMatrix)
+		public static Munkres2 Maximize(double[,] costMatrix)
 		{
-            var munkres = new Munkres2(costMatrix.Multiply(-1));
-            return munkres.Run();
+            var munkres = new Munkres2(costMatrix.Negate());
+            if (!munkres.Run())
+                throw new InvalidOperationException();
+            return munkres;
+
 		}
 
 		public bool Run()

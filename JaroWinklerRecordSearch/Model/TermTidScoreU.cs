@@ -5,23 +5,23 @@ namespace JaroWinklerRecordSearch.Model
     [PublicAPI]
     public struct TermTidScoreU
     {
-        public TermTidScoreU(string term, StTidScore stTidScore, long u, long umax)
+        public TermTidScoreU(string term, StIdTidScore stIdTidScore, long u, long umax)
         {
             Term = term;
-            StTidScore = stTidScore;
+            StIdTidScore = stIdTidScore;
             U = u;
             Umax = umax;
         }
 
         public string Term { get; set; }
-        public StTidScore StTidScore { get; set; }
+        public StIdTidScore StIdTidScore { get; set; }
         public long U { get; set; }
         public long Umax { get; set; }
 
-        public void Deconstruct(out string term, out StTidScore stTidScore, out long u, out long umax)
+        public void Deconstruct(out string term, out StIdTidScore stIdTidScore, out long u, out long umax)
         {
             term = Term;
-            stTidScore = StTidScore;
+            stIdTidScore = StIdTidScore;
             u = U;
             umax = Umax;
         }
