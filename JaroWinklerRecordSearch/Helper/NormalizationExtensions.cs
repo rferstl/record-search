@@ -26,20 +26,6 @@ namespace JaroWinklerRecordSearch.Helper
             return rd.ToLowerInvariant();
         }
 
-        public static IEnumerable<(string orig, string norm)> ToTermPairs(this NameParts<string> nps)
-        {
-            var ots = nps.OriginalFirstNames.Concat(nps.OriginalLastNames);
-            var nts = nps.NormalizedFirstNames.Concat(nps.NormalizedLastNames);
-            return ots.Zip(nts, (a,b)=>(a,b));
-        }
-
-        public static NameParts<string> ToNameParts(this ScdPerson scdPerson)
-        {
-            var (ofns, nfns) = ToNameParts(scdPerson.FirstNameNat, scdPerson.FirstName);
-            var (olns, nlns) = ToNameParts(scdPerson.LastNameNat, scdPerson.LastName);
-            return new NameParts<string>(scdPerson.Id, nfns, ofns, nlns, olns);
-        }
-
         public static (string[] origs, string[] norms) ToNameParts(string nameNat, string name)
         {
             var origs = nameNat.MySplit();
@@ -54,22 +40,40 @@ namespace JaroWinklerRecordSearch.Helper
             return (origs, norms);
         }
 
-        public static ScdDoc ToScdDoc(this NameParts<string> nps, Func<(string orig, string norm), Term> resolver)
+        public static (string[] origs, string[] norms) ToNameParts(string name)
         {
-            var tplf = nps.OriginalFirstNames.Zip(nps.NormalizedFirstNames, (a,b)=>(a,b))
-                .Select((p,i) => new TidFieldPos(resolver(p).Id, FieldEnum.FirstName, i));
-            var tpll = nps.OriginalLastNames.Zip(nps.NormalizedLastNames, (a,b)=>(a,b))
-                .Select((p, i) => new TidFieldPos(resolver(p).Id, FieldEnum.LastName, i));
-            var tpl = tplf.Concat(tpll).ToArray();
-            return new ScdDoc(nps.Id, tpl);
+            var origs = name.MySplit();
+            var norms = origs.Select(n => n.MyNormalize()).ToArray();
+            if (origs.Length != norms.Length) throw new InvalidOperationException();
+            return (origs, norms);
         }
 
-        public static ScdDoc ToScdDoc(this ScdPerson scdPerson, Func<(string orig, string norm), Term> resolver)
-            => scdPerson.ToNameParts().ToScdDoc(resolver);
+        public static IndexDoc ToScdIndexDoc(this ScdPerson scdPerson, Func<(string orig, string norm), Term> termResolver, Func<string,int> orgCodeResolver)
+        {
+            var (ofns, nfns) = ToNameParts(scdPerson.FirstNameNat, scdPerson.FirstName);
+            var (olns, nlns) = ToNameParts(scdPerson.LastNameNat, scdPerson.LastName);
+            var tplf = ofns.Zip(nfns, (a,b)=>(a,b))
+                .Select((p,i) => new TidFieldPos(termResolver(p).Id, FieldEnum.FirstName, i));
+            var tpll = olns.Zip(nlns, (a,b)=>(a,b))
+                .Select((p, i) => new TidFieldPos(termResolver(p).Id, FieldEnum.LastName, i));
+            var tplo = new []{new TidFieldPos(orgCodeResolver(scdPerson.OrgCode), FieldEnum.OrgCode, 0)};
+            var tpl = tplf.Concat(tpll).Concat(tplo).ToArray();
+            var scdIndexDoc = new IndexDoc(scdPerson.Id, tpl);
+            return scdIndexDoc;
+        }
+
+        public static IndexDoc ToOrgCodeIndexDoc(this (int id, string name) orgCode, Func<(string orig, string norm), Term> termResolver)
+        {
+            var (oocs, nocs) = ToNameParts(orgCode.name);
+            var tpl = oocs.Zip(nocs, (a,b)=>(a,b))
+                .Select((p, i) => new TidFieldPos(termResolver(p).Id, FieldEnum.OrgCode, i));
+            var orgCodeIndexDoc = new IndexDoc(orgCode.id, tpl.ToArray());
+            return orgCodeIndexDoc;
+        }
 
         public static string[] MySplit(this string text)
         {
-            var ns = text.Split(new[] { " ", "(", ")", "/", "-", "_", "." }, StringSplitOptions.RemoveEmptyEntries);
+            var ns = text.Split(new[] { " ", "(", ")", "/", "-", "_", ".", "&", "+" }, StringSplitOptions.RemoveEmptyEntries);
             return ns;
         }
 

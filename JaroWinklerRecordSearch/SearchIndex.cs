@@ -17,10 +17,10 @@ namespace JaroWinklerRecordSearch
         public IList<Segment> Segments { get; }
         public IDictionary<int, Term> Terms { get; }
         public IDictionary<int, IList<TidFieldPos>> Docs { get; }
-        public IList<IList<int>> Index { get; }
+        public IList<IList<DocTidFieldPos>> Index { get; }
 
         public SearchIndex(IDictionary<string, int> bitArrayCharMap, IList<Segment> segments,
-            IDictionary<int, Term> terms, IDictionary<int, IList<TidFieldPos>> docs, IList<IList<int>> index, 
+            IDictionary<int, Term> terms, IDictionary<int, IList<TidFieldPos>> docs, IList<IList<DocTidFieldPos>> index, 
             double unmatchTolerance = 0.8, double tresholdScore = 0.9)
         {
             BitArrayCharMap = bitArrayCharMap;
@@ -56,26 +56,26 @@ namespace JaroWinklerRecordSearch
             => JsonlExtensions.LoadFromJsonLines<Segment>("segements.jsonl");
 
         public static IDictionary<int,Term> LoadTerms()
-            => JsonlExtensions.LoadFromJsonLines<Term>("terms.jsonl").ToDictionary(e => e.Id);
+            => JsonlExtensions.LoadFromJsonLines<Term>("scd_terms.jsonl").ToDictionary(e => e.Id);
 
         public static IDictionary<int,IList<TidFieldPos>> LoadScdDocs()
-            => JsonlExtensions.LoadFromJsonLines<ScdDoc>("scd_docs.jsonl").ToDictionary(e => e.Id, e => e.Tpl);
+            => JsonlExtensions.LoadFromJsonLines<IndexDoc>("scd_docs.jsonl").ToDictionary(e => e.Id, e => e.Tpl);
 
-        public static IList<IList<int>> InvertedIndex(IDictionary<int, IList<TidFieldPos>> docs, int tidCount)
+        public static IList<IList<DocTidFieldPos>> InvertedIndex(IDictionary<int, IList<TidFieldPos>> docs, int tidCount)
         {
             var gs = docs
-                .SelectMany(d => d.Value.Select(tp => new KeyValuePair<int, int>(tp.Tid, d.Key)))
+                .SelectMany(d => d.Value.Select(tfp => new KeyValuePair<int, DocTidFieldPos>(tfp.Tid, new DocTidFieldPos(d.Key, tfp))).Where(kv => kv.Key < tidCount))
                 .GroupBy(e => e.Key);
-            var array = new IList<int>[tidCount];	
+            var array = new IList<DocTidFieldPos>[tidCount];	
             foreach(var g in gs)
                 array[g.Key] = g.Select(kv => kv.Value).ToArray();
             return array;
         }
-        public IList<TermTidScoreU> SearchTermScore(SearchTerm searchTerm)
+        public IList<StTidScore> SearchTermScore(SearchTerm searchTerm)
         {
             var (stId, stOrig, stNorm) = searchTerm;
             if (stNorm.Length == 0)
-                return Array.Empty<TermTidScoreU>();
+                return Array.Empty<StTidScore>();
 
             var pw = stNorm.Length >= 4 ? 0.2
                 : stNorm.Length == 3 ? 0.3
@@ -84,14 +84,13 @@ namespace JaroWinklerRecordSearch
                 : throw new InvalidOperationException();
             var termIds = PreSelectTermIds(stNorm).ToArray();
             var origTerms = termIds.Select(tid => (orig: Terms[tid.tid].Orig, tid.tid, tid.u, tid.umax));
-            var result = origTerms.AsParallel().WithDegreeOfParallelism(4)
-                .WithMergeOptions(ParallelMergeOptions.FullyBuffered)
+            var result = origTerms //.AsParallel().WithDegreeOfParallelism(4).WithMergeOptions(ParallelMergeOptions.FullyBuffered)
                 .Select(term =>
-                    new TermTidScoreU(term.orig, new StTidScore(stId, term.tid, JaroWinkler(stOrig, term.orig, pw)), term.u, term.umax))
-                .Where(r => r.StTidScore.Score >= TresholdScore)
+                    new StTidScore(stId, term.tid, JaroWinkler(stOrig, term.orig, pw)))
+                .Where(r => r.Score >= TresholdScore)
                 .ToArray();
 
-            return result.OrderByDescending(r => r.StTidScore.Score).ToArray();
+            return result.OrderByDescending(r => r.Score).ToArray();
         }
 
         public IEnumerable<(int tid, long u, long umax)> PreSelectTermIds(string nst)
@@ -130,14 +129,15 @@ namespace JaroWinklerRecordSearch
                 .ToArray();
         }
 
-        public IList<DocStTidScores> Find2(IList<TermTidScoreU> tids)
+        public IEnumerable<DocFieldPosTidStIdScores> Find2(IEnumerable<StTidScore> stTidScores)
         {
-            static DocStTidScores Aggregate(int docId, IEnumerable<DocStTidScore> xs) =>
-                new(docId, xs.Select(ts => ts.StTidScore).ToArray());
+            static DocFieldPosTidStIdScores Aggregate(int docId, IEnumerable<DocFieldPosTidStIdScore> xs) =>
+                new(docId, xs.Select(x => x.FieldPosTidStIdScore).ToArray());
 
-            var docLists = tids.Select(t => Index[t.StTidScore.Tid].Select(d => new DocStTidScore(d, t.StTidScore)));
-            var merged = docLists.MergeBy(x => x.DocId, Aggregate).ToArray();
-            return merged;
+            var docLists = stTidScores.SelectMany(t => Index[t.Tid].Select(d => new DocFieldPosTidStIdScore(d, t)));
+            //var merged = docLists.MergeBy(x => x.DocId, Aggregate).ToArray();
+            var groupBy = docLists.GroupBy(d => d.DocId, Aggregate);
+            return groupBy;
         }
     }
 }

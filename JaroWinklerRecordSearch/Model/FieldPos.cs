@@ -55,5 +55,10 @@ namespace JaroWinklerRecordSearch.Model
         {
             return $"{Field}.{Pos}";
         }
+        public object ToDump()
+        {
+            return $"{Field}.{Pos}";
+        }
+
     }
 }

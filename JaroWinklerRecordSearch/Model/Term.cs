@@ -6,6 +6,8 @@ namespace JaroWinklerRecordSearch.Model
     [PublicAPI]
     public readonly struct Term
     {
+        public static readonly Term None = new(-1, "", "");
+
         public int Id { get; }
         public string Orig { get; }
         public string Norm { get; }

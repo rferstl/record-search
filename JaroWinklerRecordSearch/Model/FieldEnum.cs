@@ -6,6 +6,7 @@ namespace JaroWinklerRecordSearch.Model
     public enum FieldEnum
     {
         FirstName = 1,
-        LastName = 2
+        LastName = 2,
+        OrgCode = 3
     }
 }
