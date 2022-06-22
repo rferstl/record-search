@@ -1,7 +1,9 @@
 using System;
+using JetBrains.Annotations;
 
 namespace JaroWinklerRecordSearch.MyMath
 {
+    [PublicAPI]
     public static class Elementwise
     {
         public static bool[,] Equals(double[,] a, double[,] b, bool[,] result, double atol = 0.0)

@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Text;
 using static System.FormattableString;
+// ReSharper disable RedundantAssignment
+// ReSharper disable UnusedMember.Local
 
+// ReSharper disable once CheckNamespace
 namespace Munkres
 {
     // This is the original code from http://csclab.murraystate.edu/~bob.pilgrim/445/munkres.html

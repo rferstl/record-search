@@ -1,9 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using JetBrains.Annotations;
 
 namespace JaroWinklerRecordSearch.MyMath
 {
+    [PublicAPI]
     public static class Matrix
     {
         public static int Columns<T>(this T[,] matrix)

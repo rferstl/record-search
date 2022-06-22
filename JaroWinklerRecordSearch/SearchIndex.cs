@@ -36,7 +36,7 @@ namespace JaroWinklerRecordSearch
         {
             var terms = LoadTerms();
             var docs = LoadScdDocs();
-            var index = InvertedIndex(docs, terms.Count);
+            var index = docs.InvertedIndex(terms.Count);
             var searchIndex = new SearchIndex(
                 bitArrayCharMap: LoadBitArrayCharMap(),
                 segments: LoadSegments().ToArray(),
@@ -61,16 +61,6 @@ namespace JaroWinklerRecordSearch
         public static IDictionary<int,IList<TidFieldPos>> LoadScdDocs()
             => JsonlExtensions.LoadFromJsonLines<IndexDoc>("scd_docs.jsonl").ToDictionary(e => e.Id, e => e.Tpl);
 
-        public static IList<IList<DocTidFieldPos>> InvertedIndex(IDictionary<int, IList<TidFieldPos>> docs, int tidCount)
-        {
-            var gs = docs
-                .SelectMany(d => d.Value.Select(tfp => new KeyValuePair<int, DocTidFieldPos>(tfp.Tid, new DocTidFieldPos(d.Key, tfp))).Where(kv => kv.Key < tidCount))
-                .GroupBy(e => e.Key);
-            var array = new IList<DocTidFieldPos>[tidCount];	
-            foreach(var g in gs)
-                array[g.Key] = g.Select(kv => kv.Value).ToArray();
-            return array;
-        }
         public IEnumerable<StIdTidScore> SearchTermScore(SearchTerm searchTerm)
         {
             var (stId, stOrig, stNorm) = searchTerm;

@@ -40,7 +40,7 @@ namespace JaroWinklerRecordSearch.Helper
             return (origs, norms);
         }
 
-        public static (string[] origs, string[] norms) ToNameParts(string name)
+        public static (string[] origs, string[] norms) ToOrgCodeParts(string name)
         {
             var origs = name.MySplit();
             var norms = origs.Select(n => n.MyNormalize()).ToArray();
@@ -62,9 +62,10 @@ namespace JaroWinklerRecordSearch.Helper
             return scdIndexDoc;
         }
 
+        // ReSharper disable once UseDeconstructionOnParameter
         public static IndexDoc ToOrgCodeIndexDoc(this (int id, string name) orgCode, Func<(string orig, string norm), Term> termResolver)
         {
-            var (oocs, nocs) = ToNameParts(orgCode.name);
+            var (oocs, nocs) = ToOrgCodeParts(orgCode.name);
             var tpl = oocs.Zip(nocs, (a,b)=>(a,b))
                 .Select((p, i) => new TidFieldPos(termResolver(p).Id, FieldEnum.OrgCode, i));
             var orgCodeIndexDoc = new IndexDoc(orgCode.id, tpl.ToArray());
@@ -73,7 +74,7 @@ namespace JaroWinklerRecordSearch.Helper
 
         public static string[] MySplit(this string text)
         {
-            var ns = text.Split(new[] { " ", "(", ")", "/", "-", "_", ".", "&", "+" }, StringSplitOptions.RemoveEmptyEntries);
+            var ns = text.Split(new[] { " ", "(", ")", "/", "-", "_", ".", "+" }, StringSplitOptions.RemoveEmptyEntries);
             return ns;
         }
 
@@ -82,5 +83,6 @@ namespace JaroWinklerRecordSearch.Helper
             var nsts = text.MySplit().Select((t,i) => new SearchTerm(i, t, t.MyNormalize()));
             return nsts;
         }
+
     }
 }

@@ -54,8 +54,6 @@ namespace JaroWinklerRecordSearch.MyMath
 	[PublicAPI]
 	public class Munkres2
 	{
-
-        private readonly double[,] _costMatrix;
         private readonly double[,] _validCost;
 		private readonly bool[,] _stars;
 		private readonly bool[] _rowCover;
@@ -96,7 +94,7 @@ namespace JaroWinklerRecordSearch.MyMath
         /// 
         /// <value>The cost matrix.</value>
         /// 
-        public double[,] CostMatrix => _costMatrix;
+        public double[,] CostMatrix { get; }
 
         /// <summary>
 		/// Gets or sets the number of variables in this optimization problem
@@ -118,7 +116,7 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// 
 		/// <value>The number of tasks in the assignment problem.</value>
 		/// 
-		public int NumberOfTasks => _costMatrix.Columns();
+		public int NumberOfTasks => CostMatrix.Columns();
 
         /// <summary>
 		///   Gets or sets the number of workers in the assignment algorithm.
@@ -128,7 +126,7 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// 
 		/// <value>The number of workers.</value>
 		/// 
-		public int NumberOfWorkers => _costMatrix.Rows();
+		public int NumberOfWorkers => CostMatrix.Rows();
 
         /// <summary>
 		/// Gets the current solution found, the values of
@@ -159,11 +157,11 @@ namespace JaroWinklerRecordSearch.MyMath
 		/// 
 		public Munkres2(double[,] costMatrix)
         {
-            _costMatrix = costMatrix;
+            CostMatrix = costMatrix;
             Solution = new double[NumberOfWorkers];
-            _n = Math.Max(_costMatrix.Rows(), _costMatrix.Columns());
-            var max = _costMatrix.MaxAbs();
-            _validCost = _costMatrix.ToSquare(_n, 10.0 * max);
+            _n = Math.Max(CostMatrix.Rows(), CostMatrix.Columns());
+            var max = CostMatrix.MaxAbs();
+            _validCost = CostMatrix.ToSquare(_n, 10.0 * max);
             _rowCover = new bool[_n];
             _colCover = new bool[_n];
             _stars = new bool[_n,_n];
@@ -344,12 +342,12 @@ namespace JaroWinklerRecordSearch.MyMath
 				zeros.RemoveAll(x => x.Item1 == _pathRow0);
 
 				// Update
-				for (var r = 0; r < Math.Min(_costMatrix.GetLength(0), _rowCover.Length); r++)
+				for (var r = 0; r < Math.Min(CostMatrix.GetLength(0), _rowCover.Length); r++)
 				{
 					if (_rowCover[r])
 						continue;
 
-					var a = _costMatrix[r,stz];
+					var a = CostMatrix[r,stz];
 					var b = MinRow[r] + MinCol[stz];
 
 					if (Math.Abs(a - b) < Tolerance)
@@ -469,15 +467,15 @@ namespace JaroWinklerRecordSearch.MyMath
 			//                     (http://csclab.murraystate.edu/~bob.pilgrim/445/munkres.html)
 			double value = 0;
 
-			for (var i = 0; i < _costMatrix.Rows(); i++)
+			for (var i = 0; i < CostMatrix.Rows(); i++)
 			{
 				Solution[i] = double.NaN;
 				var j = StarZ[i];
 
-				if (j >= 0 && j < _costMatrix.Columns())
+				if (j >= 0 && j < CostMatrix.Columns())
 				{
 					Solution[i] = j;
-					value += _costMatrix[i,j];
+					value += CostMatrix[i,j];
 				}
 			}
 			Value = value;

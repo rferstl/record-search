@@ -13,9 +13,9 @@ namespace JaroWinklerRecordSearch
         public IDictionary<string, Term> TermDict { get; }
         public IDictionary<int, Term> Terms { get; }
         public IDictionary<int, IList<TidFieldPos>> Docs { get; }
-        public IList<IList<int>> Index { get; }
+        public IList<IList<DocTidFieldPos>> Index { get; }
 
-        public OrgCodeSearchIndex(IDictionary<string,Term> termDict, IDictionary<int, Term> terms, IDictionary<int, IList<TidFieldPos>> docs, IList<IList<int>> index)
+        public OrgCodeSearchIndex(IDictionary<string,Term> termDict, IDictionary<int, Term> terms, IDictionary<int, IList<TidFieldPos>> docs, IList<IList<DocTidFieldPos>> index)
         {
             TermDict = termDict;
             Terms = terms;
@@ -26,9 +26,9 @@ namespace JaroWinklerRecordSearch
         public static OrgCodeSearchIndex Build()
         {
             var terms = LoadOrgCodeTerms();
-            var termDict = terms.ToDictionary(e => e.Value.Norm, e => e.Value);
+            var termDict = terms.ToDictionaryFirst(e => e.Value.Norm, e => e.Value);
             var docs = LoadOrgCodeDocs();
-            var index = InvertedIndex(docs, terms.Count);
+            var index = docs.InvertedIndex(terms.Count);
             var searchIndex = new OrgCodeSearchIndex(
                 termDict: termDict,
                 terms: terms,
@@ -44,25 +44,27 @@ namespace JaroWinklerRecordSearch
         public static IDictionary<int,IList<TidFieldPos>> LoadOrgCodeDocs()
             => JsonlExtensions.LoadFromJsonLines<IndexDoc>("orgcode_docs.jsonl").ToDictionary(e => e.Id, e => e.Tpl);
 
-        public static IList<IList<int>> InvertedIndex(IDictionary<int, IList<TidFieldPos>> docs, int tidCount)
-        {
-            var gs = docs
-                .SelectMany(d => d.Value.Select(tp => new KeyValuePair<int, int>(tp.Tid, d.Key)))
-                .GroupBy(e => e.Key);
-            var array = new IList<int>[tidCount];	
-            foreach(var g in gs)
-                array[g.Key] = g.Select(kv => kv.Value).ToArray();
-            return array;
-        }
         public IList<StIdTidScore> SearchTermScore(SearchTerm searchTerm)
         {
             var (stId, _, stNorm) = searchTerm;
             if (stNorm.Length == 0)
                 return Array.Empty<StIdTidScore>();
 
-            var term = TermDict.GetValueOrDefault(stNorm, Term.None);
-            return new []{new StIdTidScore(stId, term.Id, 0.5) };
+            if (!TermDict.TryGetValue(stNorm, out var result))
+                return Array.Empty<StIdTidScore>();
+
+            return new[] { new StIdTidScore(stId, result.Id, 1) };
         }
 
+
+        public IEnumerable<DocFieldPosTidStIdScores> Find(IEnumerable<StIdTidScore> stTidScores)
+        {
+            static DocFieldPosTidStIdScores Aggregate(int docId, IEnumerable<DocFieldPosTidStIdScore> xs) =>
+                new(docId, xs.Select(x => x.FieldPosTidStIdScore).ToArray());
+
+            var docLists = stTidScores.SelectMany(t => Index[t.Tid].Select(d => new DocFieldPosTidStIdScore(d, t)));
+            var byDocId = docLists.GroupBy(d => d.DocId, Aggregate);
+            return byDocId;
+        }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
+// ReSharper disable UseDeconstructionOnParameter
 
 namespace JaroWinklerRecordSearch.Model
 {
