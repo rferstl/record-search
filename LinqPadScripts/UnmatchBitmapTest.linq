@@ -1,5 +1,5 @@
 <Query Kind="Program">
-  <Reference>C:\Users\z00017ol\source\repos\JaroWinklerRecordSearch\JaroWinklerRecordSearch\bin\Debug\JaroWinklerRecordSearch.dll</Reference>
+  <Reference Relative="..\JaroWinklerRecordSearch\bin\Debug\JaroWinklerRecordSearch.dll">C:\Users\z00017ol\source\repos\JaroWinklerRecordSearch\JaroWinklerRecordSearch\bin\Debug\JaroWinklerRecordSearch.dll</Reference>
   <Namespace>JaroWinklerRecordSearch.Helper</Namespace>
   <Namespace>JaroWinklerRecordSearch</Namespace>
 </Query>
