@@ -1,5 +1,34 @@
 # record-search
 
+1. Clone the repository
+
+    ```bash
+    git clone https://github.com/rferstl/record-search.git
+    ```
+
+2. Run "Developer Command Prompt for VS 2019"
+
+3. Build the library project:
+
+    ```bash
+    cd JaroWinklerRecordSearch
+    msbuild JaroWinklerRecordSearch.csproj /t:rebuild /property:Configuration=Debug
+    ```
+
+4. Build the test project:
+
+    ```bash
+    cd JaroWinklerRecordSearch.Test
+    msbuild JaroWinklerRecordSearch.Test.csproj /t:rebuild /property:Configuration=Debug
+    ```
+
+5. run test:
+
+    ```bash
+    cd JaroWinklerRecordSearch.Test/bin/Debug
+    JaroWinklerRecordSearch.Test.exe
+    ```
+
 
 Based on:
 
