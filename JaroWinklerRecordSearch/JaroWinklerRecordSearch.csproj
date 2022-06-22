@@ -76,7 +76,7 @@
     <Compile Include="Model\FieldPos.cs" />
     <Compile Include="Model\Segment.cs" />
     <Compile Include="Helper\InvertedIndexExtensions.cs" />
-    <Compile Include="JarooWinklerUtils.cs" />
+    <Compile Include="JaroWinklerUtils.cs" />
     <Compile Include="Helper\MergeExtensions.cs" />
     <Compile Include="Model\FieldEnum.cs" />
     <Compile Include="Model\IndexDoc.cs" />

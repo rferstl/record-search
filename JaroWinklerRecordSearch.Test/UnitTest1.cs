@@ -59,7 +59,7 @@ namespace JaroWinklerRecordSearch.Test
 
             term.Dump(_log, "term");
             test.Dump(_log, "test");
-            var (totalScore, debug1, debug2) = JarooWinklerUtils.DebugJaroWinkler(term.ToLowerInvariant(), test.ToLowerInvariant(), 0.2);
+            var (totalScore, debug1, debug2) = JaroWinklerUtils.DebugJaroWinkler(term.ToLowerInvariant(), test.ToLowerInvariant(), 0.2);
             //totalScore += 1 - Math.Tanh(8 - 8 * jaroWinkler1);
             totalScore.Dump(_log, "totalScore");
             debug1.Dump(_log);
@@ -82,7 +82,7 @@ namespace JaroWinklerRecordSearch.Test
             {
                 t.Dump(_log, "test");
                 var totalScore = 0.0;
-                var (jaroWinkler1, debug1, debug2) = JarooWinklerUtils.DebugJaroWinkler(search.Item1.ToLowerInvariant(), t.Item1.ToLowerInvariant(), 0.2);
+                var (jaroWinkler1, debug1, debug2) = JaroWinklerUtils.DebugJaroWinkler(search.Item1.ToLowerInvariant(), t.Item1.ToLowerInvariant(), 0.2);
                 totalScore += 1 - Math.Tanh(8 - 8 * jaroWinkler1);
                 totalScore.Dump(_log, "totalScore");
                 debug1.Dump(_log);

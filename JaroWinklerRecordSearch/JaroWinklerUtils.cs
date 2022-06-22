@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 namespace JaroWinklerRecordSearch
 {
     [PublicAPI]
-    public static class JarooWinklerUtils
+    public static class JaroWinklerUtils
     {
 
         public static (double, string, string) DebugJaroWinkler(string s1, string s2, double pw = 0.1)

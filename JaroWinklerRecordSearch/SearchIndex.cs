@@ -108,8 +108,8 @@ namespace JaroWinklerRecordSearch
 
         public static double JaroWinkler(string s1, string s2, double pw = 0.1)
         {
-            var jaroWinklerSim = JarooWinklerUtils.JaroWinklerSim(s1.ToLowerInvariant(), s2.ToLowerInvariant(),
-                JarooWinklerUtils.DiacriticCharSim, pw);
+            var jaroWinklerSim = JaroWinklerUtils.JaroWinklerSim(s1.ToLowerInvariant(), s2.ToLowerInvariant(),
+                JaroWinklerUtils.DiacriticCharSim, pw);
             return jaroWinklerSim;
         }
 
