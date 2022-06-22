@@ -3,7 +3,7 @@
 
 Based on:
 
-##### 1. JaroWinkler
+##### 1. Jaro-Winkler similarity
  * https://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance
  * https://www.geeksforgeeks.org/jaro-and-jaro-winkler-similarity/
 
